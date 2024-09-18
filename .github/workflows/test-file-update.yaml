@@ -1,0 +1,47 @@
+name: Update requirements
+run-name: Update requirements.txt
+
+on:
+  push:
+    branches:
+      - '**'
+      - '!master'
+    paths: ['requirements.in']
+
+jobs:
+  main:
+    runs-on: ${{matrix.platform}}
+
+    permissions:
+      # Give the default GITHUB_TOKEN write permission to commit and push the
+      # added or changed files to the repository.
+      contents: write
+
+    strategy:
+      fail-fast: true
+      matrix:
+        platform: [ubuntu-latest]
+        python-version: ['3.9']
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Set up python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Python dependencies
+        run: |
+          python -m venv .ve
+          source .ve/bin/activate
+          pip install pip --upgrade
+          pip install pip-tools
+
+      - name: Update requirements.txt
+        run: |
+          source .ve/bin/activate
+          pip-compile requirements.in > requirements.txt
+
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          file_pattern: 'requirements.txt'
